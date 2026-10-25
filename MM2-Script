@@ -1,0 +1,157 @@
+-- ==========================================
+-- Script: MM2 Role Reveal (v4 - Accessory Filter)
+-- Developer: Eilia (TG @Saharrmohamed2005)
+-- ==========================================
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ============ الإشعار ============
+local function askToEnable()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "MM2_RevealGui"
+    gui.ResetOnSpawn = false
+    gui.Parent = playerGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 120)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -60)
+    frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    frame.BorderSizePixel = 2
+    frame.BorderColor3 = Color3.fromRGB(150, 0, 255)
+    frame.Parent = gui
+
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1, 0, 0, 60)
+    text.BackgroundTransparency = 1
+    text.Text = "هل تريد تفعيل كشف اللاعبين والقتلة؟"
+    text.TextColor3 = Color3.new(1, 1, 1)
+    text.Font = Enum.Font.SourceSansBold
+    text.TextSize = 16
+    text.TextWrapped = true
+    text.Parent = frame
+
+    local btnYes = Instance.new("TextButton")
+    btnYes.Size = UDim2.new(0.4, 0, 0, 30)
+    btnYes.Position = UDim2.new(0.05, 0, 0, 70)
+    btnYes.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    btnYes.Text = "نعم"
+    btnYes.TextColor3 = Color3.new(1, 1, 1)
+    btnYes.Font = Enum.Font.SourceSansBold
+    btnYes.Parent = frame
+
+    local btnNo = Instance.new("TextButton")
+    btnNo.Size = UDim2.new(0.4, 0, 0, 30)
+    btnNo.Position = UDim2.new(0.55, 0, 0, 70)
+    btnNo.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    btnNo.Text = "لا"
+    btnNo.TextColor3 = Color3.new(1, 1, 1)
+    btnNo.Font = Enum.Font.SourceSansBold
+    btnNo.Parent = frame
+
+    local enabled = false
+
+    btnYes.MouseButton1Click:Connect(function()
+        enabled = true
+        gui:Destroy()
+    end)
+
+    btnNo.MouseButton1Click:Connect(function()
+        enabled = false
+        gui:Destroy()
+    end)
+
+    return function() return enabled end
+end
+
+local isEnabled = askToEnable()
+
+-- ============ الحقوق ============
+local creditsGui = Instance.new("ScreenGui")
+creditsGui.Name = "EiliaCredits"
+creditsGui.ResetOnSpawn = false
+creditsGui.Parent = playerGui
+
+local credLabel = Instance.new("TextLabel")
+credLabel.Size = UDim2.new(0, 250, 0, 30)
+credLabel.Position = UDim2.new(0, 10, 1, -40)
+credLabel.BackgroundTransparency = 1
+credLabel.Text = "MM2 Reveal by Eilia | TG @Saharrmohamed2005"
+credLabel.TextColor3 = Color3.fromRGB(150, 0, 255)
+credLabel.Font = Enum.Font.SourceSansBold
+credLabel.TextSize = 12
+credLabel.TextXAlignment = Enum.TextXAlignment.Left
+credLabel.Parent = creditsGui
+
+-- ============ كشف الدور ============
+-- نفحص Character + Backpack سوا، ونفحص إذا الأداة Tool حقيقي مو ملحق
+local function getRoleColor(char, plr)
+    -- قاتل؟
+    local knifeChar = char:FindFirstChild("Knife")
+    if knifeChar and knifeChar:IsA("Tool") then
+        return Color3.fromRGB(255, 0, 0)
+    end
+
+    local backpack = plr:FindFirstChild("Backpack")
+    if backpack then
+        local knifeBp = backpack:FindFirstChild("Knife")
+        if knifeBp and knifeBp:IsA("Tool") then
+            return Color3.fromRGB(255, 0, 0)
+        end
+    end
+
+    -- شريف؟
+    local gunChar = char:FindFirstChild("Gun")
+    if gunChar and gunChar:IsA("Tool") then
+        return Color3.fromRGB(0, 100, 255)
+    end
+
+    if backpack then
+        local gunBp = backpack:FindFirstChild("Gun")
+        if gunBp and gunBp:IsA("Tool") then
+            return Color3.fromRGB(0, 100, 255)
+        end
+    end
+
+    -- عادي
+    return Color3.fromRGB(0, 255, 0)
+end
+
+local function updateHighlights()
+    if not isEnabled() then return end
+
+    for _, other in ipairs(game.Players:GetPlayers()) do
+        if other ~= player and other.Character then
+            local char = other.Character
+            local color = getRoleColor(char, other)
+
+            local hl = char:FindFirstChild("RevealHighlight")
+            if not hl then
+                hl = Instance.new("Highlight")
+                hl.Name = "RevealHighlight"
+                hl.Parent = char
+            end
+            hl.FillColor = color
+            hl.OutlineColor = color
+        end
+    end
+
+    -- تنظيف الهايلايت
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Highlight") and obj.Name == "RevealHighlight" then
+            local model = obj.Parent
+            if model and model:FindFirstChildOfClass("Humanoid") then
+                local p = game.Players:GetPlayerFromCharacter(model)
+                if p == player or not p then
+                    obj:Destroy()
+                end
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        updateHighlights()
+        task.wait(0.5)
+    end
+end)
